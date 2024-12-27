@@ -14,13 +14,19 @@ on:
     tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      model_name:
+        description: "Override model name (e.g., llama3.2:3b)"
+        required: false
+        default: "llama3.2:3b"
 
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
-
+  DEFAULT_NAME: llama3.2:3b
 
 jobs:
   build:
@@ -36,6 +42,22 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      
+      - name: Pull and run Ollama Docker container
+        run: |
+          docker pull ollama/ollama
+          docker run -d -v ollama-local:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
+          sleep 10
+      
+      - name: Pull model
+        run: |
+          MODEL_NAME="${{ github.event.inputs.model_name || env.DEFAULT_MODEL }}"
+          docker exec ollama ollama pull "$MODEL_NAME"
+
+      - name: Save model data to a tar file
+        run: |
+          mkdir ./model_data
+          docker cp ollama:/root/.ollama ./model_data
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer

@@ -1,5 +1,14 @@
-# Use an official ollama base image
-FROM ollama/ollama:0.5.4 AS base
+# Use the official Ollama base image
+FROM ollama/ollama:0.5.4
 
-# Add the llama v3.2-3 billion parameter model
-RUN ollama pull llama3.2:3b
+# Copy the preloaded model data into the container
+COPY model_data /root/.ollama
+
+# Optional: Set a default model to use
+ENV DEFAULT_MODEL llama3.2:3b
+
+# Expose the port
+EXPOSE 11434
+
+# Start the container
+CMD ["ollama", "serve"]
